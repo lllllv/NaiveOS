@@ -32,10 +32,10 @@ static inline void wait_disk()
     while((inb(0x1f7) & 0xC0) != 0x40);
 }
 
-void memset(void* p, uint32_t size, int num)
+void memset(void* p, int c, uint32_t size)
 {
     for(uint32_t i = 0; i < size; i++)
-        *(int*)p++ = num;
+        *(char*)p++ = c;
 }
 
 
@@ -81,7 +81,7 @@ void kernel_loader()
         if(proghdr[i].p_type != ELF_PROG_LOAD)
             continue;
 
-        memset((void*)proghdr[i].p_pa, proghdr[i].p_memsz, 0);
+        memset((void*)proghdr[i].p_pa, 0, proghdr[i].p_memsz);
 
         char* dest = (char*)proghdr[i].p_pa - proghdr[i].p_offset % 512;
 

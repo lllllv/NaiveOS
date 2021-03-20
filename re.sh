@@ -8,17 +8,28 @@ perl sign.pl boot &&
 
 
 # kernel part:
+
+# temporary page directory
 x86_64-elf-gcc -Os -nostdinc -fno-builtin -fno-omit-frame-pointer -std=gnu99 -static -I . -Wall -Wno-format -Wno-unused -Werror -gstabs -m32 -fno-tree-ch -c temp_pgdir.c -o temp_pgdir.o &&
+# screen print library
+x86_64-elf-gcc -Os -nostdinc -fno-builtin -fno-omit-frame-pointer -std=gnu99 -static -I . -Wall -Wno-format -Wno-unused -Werror -gstabs -m32 -fno-tree-ch -c display.c -o display.o &&
+# kernel main function
 x86_64-elf-gcc -Os -nostdinc -fno-builtin -fno-omit-frame-pointer -std=gnu99 -static -I . -Wall -Wno-format -Wno-unused -Werror -gstabs -m32 -fno-tree-ch -c kern.c -o kern.o &&
+# lib.c
+x86_64-elf-gcc -Os -nostdinc -fno-builtin -fno-omit-frame-pointer -std=gnu99 -static -I . -Wall -Wno-format -Wno-unused -Werror -gstabs -m32 -fno-tree-ch -c lib.c -o lib.o &&
+
+# kernel init assembly
 i386-elf-as kern_init.asm -o kern_init.o && 
-i386-elf-ld -m elf_i386 -N -T kernel.ld -nostdlib kern_init.o temp_pgdir.o kern.o -o kern_init.out
+
+
+i386-elf-ld -m elf_i386 -N -T kernel.ld -nostdlib kern_init.o temp_pgdir.o kern.o display.o lib.o -o kern.out
 
 
 
 # make kernel image file
 dd if=/dev/zero of=kern.img count=200 &&
 dd if=boot of=kern.img conv=notrunc &&
-dd if=kern_init.out of=kern.img seek=1 conv=notrunc &&
+dd if=kern.out of=kern.img seek=1 conv=notrunc &&
 
 
 # run qemu 
