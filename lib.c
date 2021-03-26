@@ -11,3 +11,9 @@ void memcpy(void* dst, void* src, uint32_t size)
     for(uint32_t i = 0; i < size; i++)
         *(char*)dst++ = *(char*)src++;
 }
+
+void panic(char*msg)
+{
+    printf("fatal error: %s", msg);
+    while(1);
+}

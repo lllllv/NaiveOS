@@ -18,7 +18,63 @@ void putc(char content, uint8_t attribute)
 
 void printf(char* fmt, ...)
 {
-    
+    va_list valist;
+
+    va_start(valist, fmt);
+
+    char* p = fmt;
+
+    // do NOT support escape character now !!!
+    int count = 0;
+    while(*p != '\0')
+    {
+        if(*p == '%')
+            count++;
+        p++;
+    }
+
+    while(*fmt != '\0')
+    {
+        if(*fmt == '%')
+        {
+            uint32_t tmp = va_arg(valist, int);
+            switch(*(fmt + 1))
+            {
+                case 'd': 
+                {   
+                    int num = (int)tmp;
+                    if(num < 0)
+                    {
+                        putc('-', 0x07);
+                        num = 0 - num;
+                    }
+                    int r[12] = {0};
+                    int c = 0;
+                    while(num != 0)
+                    {
+                        r[c++] = num % 10;
+                        num /= 10;
+                    }
+                    c = 11;
+                    while(r[c] == 0 && c > 0)
+                        c--;
+                    while(c >= 0)
+                        putc(r[c--] + '0', 0x07);
+                    break;
+                }
+                case 's':
+                {
+                    while(*(char*)tmp != '\0')
+                        putc(*(char*)tmp++, 0x07);
+                    break;
+                }
+            }
+            fmt += 2;
+        }
+        else 
+            putc(*fmt++, 0x07);
+    }
+
 }
 
 int sum(int num,...)

@@ -1,13 +1,13 @@
 #include "elf.h"
 
-inline void outb(uint16_t port, uint8_t data)
+static  inline void outb(uint16_t port, uint8_t data)
 {
     asm volatile("outb %0, %1"
         : 
         : "a"(data), "d"(port));
 }
 
-inline uint16_t inw(uint16_t port)
+static inline uint16_t inw(uint16_t port)
 {
     uint16_t result;
     asm volatile("inw %1, %0"
@@ -17,7 +17,7 @@ inline uint16_t inw(uint16_t port)
     return result;
 }
 
-inline uint8_t inb(uint16_t port)
+static inline uint8_t inb(uint16_t port)
 {
     uint8_t result;
     asm volatile("inb %1, %0"
@@ -64,8 +64,19 @@ void read_sector(uint16_t* addr, uint32_t sectno)
 
 
 
+ 
+
+
+
 void kernel_loader()
 {
+
+    // in your main routine - memory map is stored in 0000:1000 - 0000:2FFF for example
+
+
+
+
+
     struct Elf* kern_header = (struct Elf*)(0x10000);
 
 
@@ -99,6 +110,8 @@ void kernel_loader()
             dest += 512;
         }
     }
+
+    
 
     ((void (*)(void))(kern_header->e_entry))();
 
