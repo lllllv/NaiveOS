@@ -35,4 +35,4 @@ dd if=kern.out of=kern.img seek=1 conv=notrunc &&
 
 
 # run qemu 
-qemu-system-i386  -drive file=kern.img,index=0,media=disk,format=raw -serial mon:stdio  -gdb tcp::1234 
+qemu-system-i386 -drive file=kern.img,index=0,media=disk,format=raw -serial mon:stdio  -gdb tcp::1234  

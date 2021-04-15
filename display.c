@@ -1,6 +1,7 @@
 #include "display.h"
 #include "lib.h"
 
+static uint16_t* cursor = (uint16_t*)0xf00b7ffe;
 
 void putc(char content, uint8_t attribute)
 {
@@ -62,12 +63,38 @@ void printf(char* fmt, ...)
                         putc(r[c--] + '0', 0x07);
                     break;
                 }
+                case 'x': 
+                {
+                    int r[8] = {0};
+                    int c = 0;
+                    while(tmp != 0)
+                    {
+                        r[c++] = tmp % 16;
+                        tmp /= 16;
+                    }
+                    c = 7;
+                    while(r[c] == 0 && c > 0)
+                        c--;
+                    while(c >= 0)
+                    {
+                        if(r[c] > 9)
+                            putc('a' + r[c] - 10, 0x07);
+                        else 
+                            putc(r[c] + '0', 0x07);
+
+                        c--;
+                    }
+
+
+                    break;
+                }
                 case 's':
                 {
                     while(*(char*)tmp != '\0')
                         putc(*(char*)tmp++, 0x07);
                     break;
                 }
+
             }
             fmt += 2;
         }
