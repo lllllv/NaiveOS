@@ -13,3 +13,6 @@ void panic(char*msg);
 //void exit(int status);
 void memset(void* p, int c, uint32_t size);
 void memcpy(void* dst, void* src, uint32_t size);
+
+
+#define assert(x)		do { if (!(x)) panic("assertion failed"); } while (0)

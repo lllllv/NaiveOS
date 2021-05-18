@@ -3,6 +3,8 @@
 
 static uint16_t* cursor = (uint16_t*)0xf00b7ffe;
 
+
+//  每次cursor留在原地
 void putc(char content, uint8_t attribute)
 {
     cursor++;
@@ -14,8 +16,13 @@ void putc(char content, uint8_t attribute)
         memset(cursor, 0, 80 * 2);
     }
     *cursor = (content | attribute << 8);
-    //cursor++;
 }
+
+void clear()
+{
+    memset((void*)0xf00b8000, 0, 28 * 80);
+}
+
 
 void printf(char* fmt, ...)
 {
@@ -84,8 +91,6 @@ void printf(char* fmt, ...)
 
                         c--;
                     }
-
-
                     break;
                 }
                 case 's':
@@ -94,11 +99,21 @@ void printf(char* fmt, ...)
                         putc(*(char*)tmp++, 0x07);
                     break;
                 }
-
             }
             fmt += 2;
         }
-        else 
+        else if(*fmt == '\n')
+        {
+            cursor -= (((uint32_t)cursor - 0xf00b8000) / 2) % 80;
+            cursor +=  79;
+
+            
+            fmt++;
+        }
+        else if(*fmt == '\t')
+            {cursor += 4;
+            fmt++;}
+        else
             putc(*fmt++, 0x07);
     }
 

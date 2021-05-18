@@ -47,7 +47,7 @@ gdt:
     .long 0x00000000
     .long 0x00000000
 code_seg:
-    .long 0x0000ffff
+    .long 0x0000FFFF
     .long 0x00CF9A00
 data_seg:
     .long 0x0000FFFF

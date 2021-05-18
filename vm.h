@@ -15,7 +15,6 @@ struct Page
     uint32_t flags;
 };
 
-
 void vm_init();
 void* init_alloc(uint32_t size);
 void ppage_init();

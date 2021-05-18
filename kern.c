@@ -16,10 +16,9 @@ nvram_read(int r)
 	return mc146818_read(r) | (mc146818_read(r + 1) << 8);
 }
 
-
-
 void kern()
 {
+	clear();
 
     uint32_t basemem, extmem, ext16mem, totalmem;
 
@@ -44,7 +43,7 @@ void kern()
     printf("total is %d, base is %d, ext is %d, ext16 is %d",totalmem, basemem, extmem, ext16mem);
     vm_init();
     printf("vm init done");
-    //printf("test %x", 0);
+
     spin: 
         goto spin;
 }

@@ -14,29 +14,30 @@ uint32_t* kern_pgdir;
 uint32_t page2pa(struct Page* p)
 {
     uint32_t index = p - ppage;
-    //if(index ==0) printf("page2pa: %x", PGSIZE * index);
     return PGSIZE * index;
 }
 
 struct Page* pa2page(uint32_t pa)
 {
-    return ppage + pa - pa % PGSIZE;
+    return ppage + (pa - pa % PGSIZE) / PGSIZE;
 }
 
 struct Page* ppage_alloc()
 {
     if(free_pages == NULL)
     {
-        printf("Error! No more space to allocate");
         return NULL;
     }
 
     struct Page* t = free_pages;
     free_pages = free_pages->next;
 
+    t->ref_count++;
     return t;
 }
 
+
+//  取消一个page在目录中的映射，如果引用为0，则回收。保证回收的结构体全是0
 void page_delete(uint32_t* pgdir, uint32_t va)
 {
     if(pgdir[PDX(va)])
@@ -45,9 +46,13 @@ void page_delete(uint32_t* pgdir, uint32_t va)
         if(page_table[PTX(va)] != 0)
         {
             struct Page* p = pa2page(page_table[PTX(va)] & ~0xfff);
+            printf("pgnum %d", p - ppage);
             p->ref_count--;
+            printf("here0%d", p->ref_count);
             if(p->ref_count == 0)
             {
+                printf("here\n");
+                memset(p, 0, sizeof(struct Page));
                 p->next = free_pages;
                 free_pages = p;
             }
@@ -80,7 +85,7 @@ uint32_t* page_entry(uint32_t* pgdir, uint32_t va)
         if(!p)
             panic("pgentry(): No more space for a page table");
 
-        p->ref_count++;
+        
         memset(KADDR(page2pa(p)), 0, PGSIZE);
         uint32_t tmp = page2pa(p);
         pgdir[PDX(va)] = tmp | PTE_P | PTE_W ;
@@ -117,16 +122,12 @@ void vm_init()
     
 
     /*             kern page directory        */
-    struct Page* p = ppage_alloc();
-    p->ref_count++;
-    kern_pgdir = KADDR((uint32_t*)page2pa(p));
-
-
     //  kern_pgdir : kernel addr. Its physics addr is PADDR(kern_pgdir)
+    struct Page* p = ppage_alloc();
     
+    kern_pgdir = KADDR((uint32_t*)page2pa(p));
     
     memset(kern_pgdir, 0, PGSIZE);
-    
 
     // 创建内核空间到所有物理地址的直接映射
     int r = memory_map(kern_pgdir, 0xf0000000, 0, 0x10000000, PTE_W | PTE_P);
@@ -156,7 +157,7 @@ void vm_init()
                 : 
                 :"r"(cr0));
     
-
+    
     vm_test();
 }
 
@@ -168,6 +169,8 @@ void* init_alloc(uint32_t size)
     return (void*)(free_mem - size);
 }
 
+
+//    初始化每个物理页对应的结构体集合，将空闲的页使用链起来，空闲页全为0
 void ppage_init()
 {
     // 0x10000000 = 256MB, 256MB / 4KB = 64K = 64 * 1024
@@ -183,7 +186,7 @@ void ppage_init()
         ppage[i].next = &ppage[i + 1];
     }
 
-    uint32_t tmp = i;
+    uint32_t tmp = i - 1;
 
     // 640KB ~ 1MB
     for(; i < 1 * 1024 * 1024 / PGSIZE; i++)
@@ -192,7 +195,7 @@ void ppage_init()
         ppage[i].next = NULL;
     }
 
-    // 1MB ~ X, kern data
+    // 1MB ~ X, kernel data
     for(; i < (free_mem & 0x0fffffff) / PGSIZE; i++)
     {
         ppage[i].ref_count = 1;
@@ -208,34 +211,39 @@ void ppage_init()
         ppage[i].next = &ppage[i + 1];
     }
 
-    ppage[i].next = NULL;
+    ppage[i - 1].next = NULL;
+
     free_pages = &ppage[0];
-    
 }
 
 
 void vm_test()
 {
-    // ppage_alloc  
+
 
     struct Page* p = ppage_alloc();
-    p->ref_count++;
-    printf("ppage : %x", page2pa(p));
+    printf("alloc  %x\n", page2pa(p));
+    
+    memory_map(kern_pgdir, 0x20000000, page2pa(p), PGSIZE, PTE_W);
+    *(int*)0x20000000 = 0x77777777;
+    assert(*(int*)0x20000000==0x77777777);
 
-    uint32_t* pte = page_entry(kern_pgdir, 0x200000);
-    *pte = page2pa(p) | PTE_P | PTE_W;
+    printf("true %x\n", *page_entry(kern_pgdir, 0x20000000) & ~0xfff);
+    struct Page* tmp;
+    tmp = free_pages;
+    free_pages = NULL;
+    assert(!ppage_alloc());
 
-    //printf("pte is %x", *pte);
+    
+    page_delete(kern_pgdir, 0x20000000);
+    printf("\n%x", ppage_alloc());
+    
+
+    printf("pa2page(): 0x8132, 0x0, 0x2345: %x %x %x\n", pa2page(0x8132), pa2page(0x0), pa2page(0x2345));
 
 
-    *(int*)0x200000 = 0x77777777;
-
-    printf("test---%x", *(uint32_t*)0x200000);
-
-    //printf("dd%x", kern_pgdir[PDX(0xf0100000)] & ~0xfff);
-
-    printf("-------END--------");
-
+    printf("\nmem check done.");
+   
 
 }
 

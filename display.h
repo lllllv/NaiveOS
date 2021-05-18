@@ -5,6 +5,7 @@
 
 
 void putc(char content, uint8_t attribute);
+void clear();
 void printf(char* fmt, ...);
 
 #endif
